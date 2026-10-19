@@ -1,0 +1,22 @@
+How to use log_serial.py:
+
+1. Download the files from the GitHub repo:
+- The folder named "thermobox" that contains the header, .cpp and .ino file (Folder and .ino file are required to have the same name!)
+- The python script "log_serial.py" does the logging in a .csv file.
+Note: The python script doesn't necessarily have to be in the same folder as the .ino file.
+
+2. Upload the .ino file to the Arduino Uno; 
+Make sure to close the Serial monitor! Only one program can hold the serial port at once.
+So if we want to print the data to a .csv file, we need to close the serial monitor before we run the python script.
+
+3. Running the python script
+- Open a CMD where the script is saved. (Just type CMD in the bar where the script is saved).
+HEADS UP!: The script will auto detect the port to which the Arduino is connected to; This only works if the Arduino is the only device using a port. If you have multiple devices plugged in, you can add the specific COM port when running the script. (Check the port in the Arduino ide)
+- Type: 'python log-serial.py --' and press enter.
+(For specific port, e.g. COM5 : 'python log-serial.py COM5')
+
+4. Watching the logger
+The logger will print each CSV row in the terminal as the Arduino sends it.
+Press Ctrl+C to stop. The script prints the rows that were saved and the file name when it exits.
+The file will be saved in the folder where the script is located. 
+The .csv file can be opened directly in MATLAB or in Excel.
