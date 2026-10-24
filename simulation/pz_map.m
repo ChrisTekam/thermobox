@@ -9,8 +9,8 @@ clear; close all; clc;
 %% ===================== USER INPUT =====================
 
 % --- PI controller gains ---
-Kp = 0.022257;
-Ki = 0.000141;
+Kp = 0.028754;
+Ki = 0.000203;
 
 % --- Closed-loop transfer function (unity negative feedback) ---
 %   T(s) = 96.7*(Kp*s + Ki) / ( 283*s^2 + (1 + 96.7*Kp)*s + 96.7*Ki )
@@ -25,7 +25,8 @@ dpi = 500;
 % --- Figure adjustments ---
 lwAdd   = 0.75;   % line width added to the default (pt)
 fsAdd   = 1;      % font size added to the default (pt)
-yPad    = 0.08;   % extra vertical spacing: 8% of the axis range above and below
+pzLwAdd = 1.5;    % extra line width for the pole/zero markers (pt)
+yPad    = 0.04;   % extra vertical spacing: 4% of the axis range above and below
 lblGap  = 0.04;   % distance between marker and label (fraction of y-range)
 
 %% ===================== SYSTEM =====================
@@ -41,6 +42,8 @@ hfig = figure;
 pzmap(sys);
 grid on
 styleFigure(hfig, lwAdd, fsAdd);                 % thicker lines, larger text
+boxAxes(hfig);                                   % boxed axes
+thickenMarkers(hfig, pzLwAdd);                   % thicker poles (x) and zeros (o)
 
 % --- labels next to every pole and zero ---
 ax  = visibleAxes(hfig);  ax = ax(1);
@@ -68,7 +71,7 @@ for k = 1:numel(lbl)
     yl = [min(yl(1), e(2)), max(yl(2), e(2)+e(4))];
 end
 ax.XLim = xl;  ax.YLim = yl;
-padAxes(hfig, yPad);                       % extra spacing
+padAxes(hfig, 0, yPad);                          % vertical padding only (4%)
 
 savefig(hfig, [fname_pzmap '.fig']);
 print(hfig, fname_pzmap, '-dpng', ['-r' num2str(dpi)], '-vector');
@@ -92,6 +95,27 @@ function ax = visibleAxes(hfig)
         keep(k) = strcmp(char(ax(k).Visible), 'on');
     end
     ax = ax(keep);
+end
+
+function boxAxes(hfig)
+    % boxed axes (matches time_response.m)
+    ax = visibleAxes(hfig);
+    for k = 1:numel(ax)
+        box(ax(k), 'on');
+    end
+end
+
+function thickenMarkers(hfig, extra)
+    % thicker pole/zero markers: every graphics object that draws a marker
+    fo = findall(hfig, '-property', 'Marker');
+    for k = 1:numel(fo)
+        try
+            if ~strcmp(char(fo(k).Marker), 'none')
+                fo(k).LineWidth = fo(k).LineWidth + extra;
+            end
+        catch
+        end
+    end
 end
 
 function padAxes(hfig, xPad, yPad)

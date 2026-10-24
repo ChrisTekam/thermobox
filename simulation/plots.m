@@ -9,8 +9,8 @@ clear; close all; clc;
 %% ===================== USER INPUT =====================
 
 % --- PI controller gains ---
-Kp = 0.022257;
-Ki = 0.000141;
+Kp = 0.028754;
+Ki = 0.000203;
 
 % --- Open-loop transfer function: L(s) = (Kp*s + Ki)/s * 96.7/(283*s + 1) ---
 num = 96.7 * [Kp Ki];                            % numerator
@@ -29,8 +29,10 @@ dpi = 500;
 
 % --- Figure adjustments ---
 lwAdd   = 0.75;   % line width added to the default (pt)
-fsAdd   = 1;      % font size added to the default (pt)
-yPad    = 0.08;   % extra vertical spacing: 8% of the axis range above and below
+fsAdd   = 3;      % font size added to the default (pt)
+yPad    = 0.04;   % extra vertical spacing: 4% of the axis range above and below
+nyqFsAdd = fsAdd - 1;   % Nyquist text 1 pt smaller than the other figures
+bodeLblAdd = 2;  % extra pt for the Bode axis titles (on top of fsAdd)
 nyqXPad = 0.10;   % extra horizontal spacing for the Nyquist plot (each side)
 
 %% ===================== SYSTEM =====================
@@ -45,7 +47,10 @@ opts.YLim         = {[-120 100]; [-120 100]};     % {magnitude (dB); phase (deg)
 hfig = figure;
 bodeplot(sys, {wmin, wmax}, opts);
 grid on
+padAxes(hfig, 0, yPad);                          % vertical padding only (4%)
 styleFigure(hfig, lwAdd, fsAdd);
+boxAxes(hfig);                                   % boxed axes
+enlargeLabels(hfig, bodeLblAdd);                     % larger Bode axis titles
 savefig(hfig, [fname_bode_mag '.fig']);
 print(hfig, fname_bode_mag, '-dpng', ['-r' num2str(dpi)], '-vector');
 
@@ -58,7 +63,10 @@ opts.YLim       = {[-190 -80]; [-190 -80]};
 hfig = figure;
 bodeplot(sys, {wmin, wmax}, opts);
 grid on
+padAxes(hfig, 0, yPad);                          % vertical padding only (4%)
 styleFigure(hfig, lwAdd, fsAdd);
+boxAxes(hfig);                                   % boxed axes
+enlargeLabels(hfig, bodeLblAdd);                     % larger Bode axis titles
 savefig(hfig, [fname_bode_phase '.fig']);
 print(hfig, fname_bode_phase, '-dpng', ['-r' num2str(dpi)], '-vector');
 
@@ -74,7 +82,9 @@ for k = 1:numel(ax)
     ax(k).XLim = nyqXLim;
     ax(k).YLim = nyqYLim;
 end
-styleFigure(hfig, lwAdd, fsAdd);
+padAxes(hfig, nyqXPad, yPad);                    % 10% horizontal, 4% vertical
+styleFigure(hfig, lwAdd, nyqFsAdd);
+boxAxes(hfig);                                   % boxed axes
 savefig(hfig, [fname_nyquist '.fig']);
 print(hfig, fname_nyquist, '-dpng', ['-r' num2str(dpi)], '-vector');
 
@@ -89,6 +99,23 @@ function ax = visibleAxes(hfig)
         keep(k) = strcmp(char(ax(k).Visible), 'on');
     end
     ax = ax(keep);
+end
+
+function boxAxes(hfig)
+    % boxed axes (matches time_response.m)
+    ax = visibleAxes(hfig);
+    for k = 1:numel(ax)
+        box(ax(k), 'on');
+    end
+end
+
+function enlargeLabels(hfig, extra)
+    % make the axis titles (x/y labels) 'extra' pt larger than the current size
+    fo = findall(hfig, '-property', 'XLabel');
+    for k = 1:numel(fo)
+        try, fo(k).XLabel.FontSize = fo(k).XLabel.FontSize + extra; catch, end
+        try, fo(k).YLabel.FontSize = fo(k).YLabel.FontSize + extra; catch, end
+    end
 end
 
 function padAxes(hfig, xPad, yPad)
