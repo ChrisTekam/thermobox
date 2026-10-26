@@ -1,148 +1,108 @@
-%% plots.m
-% Bode (magnitude and phase as separate figures) and Nyquist plot of the
-% OPEN-LOOP transfer function L(s) = C(s)*G(s), using MATLAB's built-in
-% plotting functions. Each figure is saved as .fig and as a 500 dpi .png.
-% REQUIRES: Control System Toolbox (R2016b or newer)
+%% Bode and Nyquist plots for the thermal control loop (PI + plant)
+clear; clc; close all;
 
-clear; close all; clc;
-
-%% ===================== USER INPUT =====================
-
-% --- PI controller gains ---
+%% ---- User inputs ----
 Kp = 0.028754;
 Ki = 0.000203;
 
-% --- Open-loop transfer function: L(s) = (Kp*s + Ki)/s * 96.7/(283*s + 1) ---
-num = 96.7 * [Kp Ki];                            % numerator
-den = conv([1 0], [283 1]);                      % denominator: s*(283*s + 1)
+lw   = 1.5;          % line width [pt]
+fs   = 11;           % font size [pt]
+dpi  = 500;          % export resolution
 
-% --- Frequency range (rad/s) ---
-wmin = 1e-6;
-wmax = 1e6;
+wmin = 1e-6;         % rad/s
+wmax = 1e6;          % rad/s
+w    = logspace(log10(wmin), log10(wmax), 5000);
 
-% --- Figure names (no extension) ---
-fname_bode_mag   = 'bode_magnitude';
-fname_bode_phase = 'bode_phase';
-fname_nyquist    = 'nyquist';
+% Nyquist display window (zoomed near the -1 point so low-frequency
+% blow-up from the integrator does not dominate the plot)
+nyqXlim = [-4 1.5];
+nyqYlim = [-4 4];
 
-dpi = 500;
+% Line color matching the default Bode plot line
+lineColor = [0 0.4470 0.7410];
 
-% --- Figure adjustments ---
-lwAdd   = 0.75;   % line width added to the default (pt)
-fsAdd   = 3;      % font size added to the default (pt)
-yPad    = 0.04;   % extra vertical spacing: 4% of the axis range above and below
-nyqFsAdd = fsAdd - 1;   % Nyquist text 1 pt smaller than the other figures
-bodeLblAdd = 2;  % extra pt for the Bode axis titles (on top of fsAdd)
-nyqXPad = 0.10;   % extra horizontal spacing for the Nyquist plot (each side)
+%% ---- Transfer functions ----
+s = tf('s');
+C = (Kp*s + Ki)/s;           % PI controller
+G = 96.7/(283*s + 1);        % plant
+L = C*G;                     % open-loop transfer function
 
-%% ===================== SYSTEM =====================
-sys = tf(num, den);
+%% ---- Stability margins ----
+[Gm, Pm, Wcg, Wcp] = margin(L);
 
-%% ===================== BODE MAGNITUDE =====================
-opts = bodeoptions;
-opts.FreqUnits    = 'rad/s';
-opts.PhaseVisible = 'off';                       % magnitude only
-opts.YLimMode     = {'manual'; 'manual'};
-opts.YLim         = {[-120 100]; [-120 100]};     % {magnitude (dB); phase (deg)}
-hfig = figure;
-bodeplot(sys, {wmin, wmax}, opts);
-grid on
-padAxes(hfig, 0, yPad);                          % vertical padding only (4%)
-styleFigure(hfig, lwAdd, fsAdd);
-boxAxes(hfig);                                   % boxed axes
-enlargeLabels(hfig, bodeLblAdd);                     % larger Bode axis titles
-savefig(hfig, [fname_bode_mag '.fig']);
-print(hfig, fname_bode_mag, '-dpng', ['-r' num2str(dpi)], '-vector');
+%% ---- Bode plot with margins ----
+figBode = figure('Name','Bode Plot','Color','w');
+margin(L, w);                % Bode plot + gain/phase margin annotations
+grid on;
 
-%% ===================== BODE PHASE =====================
-opts = bodeoptions;
-opts.FreqUnits  = 'rad/s';
-opts.MagVisible = 'off';                         % phase only
-opts.YLimMode   = {'manual'; 'manual'};
-opts.YLim       = {[-190 -80]; [-190 -80]};
-hfig = figure;
-bodeplot(sys, {wmin, wmax}, opts);
-grid on
-padAxes(hfig, 0, yPad);                          % vertical padding only (4%)
-styleFigure(hfig, lwAdd, fsAdd);
-boxAxes(hfig);                                   % boxed axes
-enlargeLabels(hfig, bodeLblAdd);                     % larger Bode axis titles
-savefig(hfig, [fname_bode_phase '.fig']);
-print(hfig, fname_bode_phase, '-dpng', ['-r' num2str(dpi)], '-vector');
+fontsize(figBode, fs, 'points');
+set(findall(figBode, 'Type', 'line'), 'LineWidth', lw);
 
-%% ===================== NYQUIST =====================
-nyqXLim = [-2.5 0.5];    % real axis window
-nyqYLim = [-2.5 2.5];    % imaginary axis window
+exportgraphics(figBode, 'bode_plot.png', 'Resolution', dpi);
 
-hfig = figure;
-nyquistplot(sys, {wmin, wmax});
-grid on
-ax = visibleAxes(hfig);
-for k = 1:numel(ax)
-    ax(k).XLim = nyqXLim;
-    ax(k).YLim = nyqYLim;
-end
-padAxes(hfig, nyqXPad, yPad);                    % 10% horizontal, 4% vertical
-styleFigure(hfig, lwAdd, nyqFsAdd);
-boxAxes(hfig);                                   % boxed axes
-savefig(hfig, [fname_nyquist '.fig']);
-print(hfig, fname_nyquist, '-dpng', ['-r' num2str(dpi)], '-vector');
+%% ---- Nyquist plot (open-loop) ----
+% Computed manually so the axes can be zoomed around the -1 point.
+resp = squeeze(freqresp(L, w));
+resp = resp(:);
+re = real(resp);
+im = imag(resp);
 
-%% ===================== LOCAL FUNCTIONS =====================
-% (must stay at the END of the script file)
+figNyq = figure('Name','Nyquist Plot','Color','w');
+ax = axes(figNyq); hold(ax, 'on'); box(ax, 'on');
 
-function ax = visibleAxes(hfig)
-    % all visible axes of the figure (hidden bode axes are skipped)
-    ax = findall(hfig, 'Type', 'axes');
-    keep = false(size(ax));
-    for k = 1:numel(ax)
-        keep(k) = strcmp(char(ax(k).Visible), 'on');
-    end
-    ax = ax(keep);
+% Positive frequencies and mirror image for negative frequencies (both solid)
+plot(ax, re,  im, '-', 'Color', lineColor, 'LineWidth', lw);
+plot(ax, re, -im, '-', 'Color', lineColor, 'LineWidth', lw);
+
+% Direction arrow on the positive-frequency branch (increasing w)
+inView = find(re > nyqXlim(1) & re < nyqXlim(2) & abs(im) < nyqYlim(2));
+if numel(inView) > 10
+    k = inView(round(numel(inView)*0.5));
+    quiver(ax, re(k), im(k), re(k+1)-re(k), im(k+1)-im(k), 0, ...
+        'Color', lineColor, 'LineWidth', lw, 'MaxHeadSize', 2000, 'AutoScale', 'off');
 end
 
-function boxAxes(hfig)
-    % boxed axes (matches time_response.m)
-    ax = visibleAxes(hfig);
-    for k = 1:numel(ax)
-        box(ax(k), 'on');
-    end
+% Unit circle (the curve crosses it at the gain crossover frequency)
+th = linspace(0, 2*pi, 400);
+plot(ax, cos(th), sin(th), '--', 'Color', [0.5 0.5 0.5], 'LineWidth', 1);
+
+% Gain crossover point (phase margin is the angle from here to the -1 axis)
+if isfinite(Pm) && isfinite(Wcp)
+    Lc = squeeze(freqresp(L, Wcp));
+    plot(ax, real(Lc), imag(Lc), 'ks', 'MarkerSize', 7, ...
+        'MarkerFaceColor', 'k');
 end
 
-function enlargeLabels(hfig, extra)
-    % make the axis titles (x/y labels) 'extra' pt larger than the current size
-    fo = findall(hfig, '-property', 'XLabel');
-    for k = 1:numel(fo)
-        try, fo(k).XLabel.FontSize = fo(k).XLabel.FontSize + extra; catch, end
-        try, fo(k).YLabel.FontSize = fo(k).YLabel.FontSize + extra; catch, end
-    end
-end
+% Axes through the origin
+xline(ax, 0, 'k-', 'LineWidth', 0.5);
+yline(ax, 0, 'k-', 'LineWidth', 0.5);
 
-function padAxes(hfig, xPad, yPad)
-    % extend axis limits by a fraction of the current range on each side
-    ax = visibleAxes(hfig);
-    for k = 1:numel(ax)
-        if xPad > 0
-            xl = ax(k).XLim;  r = diff(xl);
-            ax(k).XLim = xl + xPad*r*[-1 1];
-        end
-        yl = ax(k).YLim;  r = diff(yl);
-        ax(k).YLim = yl + yPad*r*[-1 1];
-    end
-end
+% Critical point -1
+plot(ax, -1, 0, 'r+', 'MarkerSize', 14, 'LineWidth', 2);
+plot(ax, -1, 0, 'ro', 'MarkerSize', 8, 'LineWidth', 1.5);
+text(ax, -1, 0.25, '-1', 'Color', 'r', 'FontSize', fs, ...
+    'FontWeight', 'bold', 'HorizontalAlignment', 'center');
 
-function styleFigure(hfig, lwAdd, fsAdd)
-    % thicker lines and larger text (relative to the current values)
-    ln = findall(hfig, 'Type', 'line');
-    for k = 1:numel(ln)
-        ln(k).LineWidth = ln(k).LineWidth + lwAdd;
-    end
-    fo = findall(hfig, '-property', 'FontSize');
-    sz = zeros(size(fo));
-    for k = 1:numel(fo)
-        sz(k) = fo(k).FontSize;                  % read all sizes first
-    end
-    for k = 1:numel(fo)
-        fo(k).FontSize = sz(k) + fsAdd;
-    end
+grid(ax, 'on');
+axis(ax, 'equal');
+xlim(ax, nyqXlim); ylim(ax, nyqYlim);
+
+xlabel(ax, 'Real Axis');
+ylabel(ax, 'Imaginary Axis');
+title(ax, 'Nyquist Plot');
+
+fontsize(figNyq, fs, 'points');
+
+exportgraphics(figNyq, 'nyquist_plot.png', 'Resolution', dpi);
+
+%% ---- Print stability margins ----
+if isfinite(Gm) && Gm > 0
+    fprintf('Gain margin  : %.2f dB at %.4g rad/s\n', 20*log10(Gm), Wcg);
+else
+    fprintf('Gain margin  : infinite (phase never reaches -180 deg)\n');
+end
+if isfinite(Pm)
+    fprintf('Phase margin : %.2f deg at %.4g rad/s\n', Pm, Wcp);
+else
+    fprintf('Phase margin : none (no gain crossover)\n');
 end
