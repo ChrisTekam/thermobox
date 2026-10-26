@@ -1,7 +1,7 @@
-#include "TempSensor.cpp"
-#include "Heater.cpp"
-#include "PIController.cpp"
-#include "Logger.cpp"
+#include "ds18b20_probe.cpp"
+#include "heater.cpp"
+#include "pi_controller.cpp"
+#include "logger.cpp"
 
 // Pins
 const uint8_t ONE_WIRE_PIN = 2;   // DS18B20 data line
