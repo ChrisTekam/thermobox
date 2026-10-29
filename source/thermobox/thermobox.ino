@@ -11,18 +11,18 @@ const uint8_t HEATER_PIN   = 9;   // to the 1k base resistor of the 2N3904
 const unsigned long TICK_MS = 1000;  // 1 Hz control loop (must exceed the 12-bit conversion time, 750 ms)
 const float TS_S = TICK_MS / 1000.0f;
 
-// PI gains (placeholders: set them from the simulation)
+// PI gains
 const float KP = 0.02f;
 const float KI = 0.00004f;
 
 // Maximum duty cycle
 const float DUTY_MAX = 1.0f;
 
-// Setpoint and safety: the heater is cut off above setpoint + SAFETY_MARGIN_C
+// Setpoint and safety
 float setpoint = 40.0f;
 const float SAFETY_MARGIN_C = 15.0f;
 
-TempSensor    sensor(ONE_WIRE_PIN, 12);  // 12-bit: 0.0625 C steps
+TempSensor    sensor(ONE_WIRE_PIN, 12); 
 Heater        heater(HEATER_PIN);
 PIController  pi(KP, KI, TS_S);
 Logger        logger(9600);
