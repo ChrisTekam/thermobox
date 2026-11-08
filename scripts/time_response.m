@@ -1,6 +1,3 @@
-%% time_response.m
-% Plot time response from 0 to 2000 seconds for output 'temp'
-% Saved as .fig and as a 500 dpi .png, matching academic styling.
 clear; close all; clc;
 
 %% ===================== USER INPUT =====================

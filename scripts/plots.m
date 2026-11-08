@@ -1,4 +1,5 @@
-%% Bode and Nyquist plots for the thermal control loop (PI + plant)
+%% Bode and Nyquist plots
+
 clear; clc; close all;
 
 %% ---- User inputs ----

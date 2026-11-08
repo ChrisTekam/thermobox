@@ -1,11 +1,3 @@
-%% pi_design.m
-% Automatic PI design (frequency-response method of the course).
-% INPUT : plant G(s) and the overshoot requirement.
-% OUTPUT: Kp, Ki, zero Ki/Kp, crossover wc, PM, GM, overshoot, Ts, poles + plots.
-% Method: OS -> zeta -> PM target; for each candidate wc the PI is placed so
-% that |L(jwc)| = 1 and the phase margin = PM (exact, no graph reading).
-% The candidate with the shortest settling time that still meets OS is chosen.
-% REQUIRES: Control System Toolbox
 clear; close all; clc;
 
 %% ===================== USER INPUT =====================

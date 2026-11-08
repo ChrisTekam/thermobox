@@ -1,26 +1,14 @@
-%% Plant identification from an open-loop test (pulse response)
-%  Test: heater on at full duty, supply switched OFF BY HAND when the target
-%  temperature was reached. The log still shows duty = 100 afterwards, so the
-%  real input is rebuilt here: u = 1 from t_on until t_off, 0 after.
-%
-%  Fits   G(s) = K*exp(-L*s) / ((tau1*s+1)(tau2*s+1))   (duty -> temperature rise)
-%  and compares simpler/more complex structures.
-%  Needs: Control System Toolbox + Optimization Toolbox
-%  (Statistics Toolbox only for the optional confidence intervals).
-%  Local functions are at the end of the file (R2016b or newer).
 clear; clc; close all;
 
-%% ---------------- Settings ----------------
+%% variables
 csv_file    = 'OpenloopTest1_29_10_2026.csv';  % columns: time_s, setpoint, temperature, duty, pwm
-Tref        = 40;          % degC, target at which the supply was switched off
-toff_mode   = 'crossing';  % 'crossing'  : t_off = first time temperature >= Tref
-                           % 'manual'    : use toff_manual
-                           % 'best_fit'  : scan t_off around the crossing, keep best RMSE
-toff_manual = 490;         % s (only for 'manual')
-ton_manual  = 30;          % s (only used if the duty column cannot be read)
-rmse_tol    = 1.10;        % pick the simplest model whose RMSE <= rmse_tol * best RMSE
+Tref        = 40;          % setpoint
+toff_mode   = 'crossing';  
+toff_manual = 490;         
+ton_manual  = 30;          
+rmse_tol    = 1.10;        
 
-%% ---------------- Load and clean the data ----------------
+%% load and clean data
 d = readtable(csv_file);
 t = d.time_s;          y = d.temperature;
 if iscell(t) || isstring(t), t = str2double(t); end
@@ -53,9 +41,9 @@ if isempty(iref), error('Temperature never reached Tref = %g degC in the log.', 
 t_cross = t(iref);
 [ypk, ipk] = max(y);
 
-ts = (0:1:t(end))';                        % uniform 1 s grid for the simulations
+ts = (0:1:t(end))';
 
-%% ---------------- Model structures ----------------
+%% model structs
 models = struct( ...
   'name', {'1st order + delay', '2 equal lags + delay', '2 lags + delay'}, ...
   'type', {'P1D', 'P2D_eq', 'P2D'}, ...
@@ -65,7 +53,7 @@ models = struct( ...
 opts = optimoptions('lsqnonlin', 'Display', 'off', 'MaxFunctionEvaluations', 5000, ...
                     'FunctionTolerance', 1e-10, 'StepTolerance', 1e-10);
 
-%% ---------------- Switch-off time ----------------
+%% switch-off time
 switch toff_mode
     case 'crossing',  toff = t_cross;
     case 'manual',    toff = toff_manual;
@@ -89,7 +77,7 @@ fprintf('Supply off t_off used : %.1f s  (mode: %s)\n', toff, toff_mode);
 fprintf('Peak after cut-off    : %.2f degC at %.0f s (%.0f s after t_off)\n', ypk, t(ipk), t(ipk) - toff);
 fprintf('Temperature at end    : %.2f degC (still cooling toward ambient)\n\n', y(end));
 
-%% ---------------- Fit all structures ----------------
+%% fit all structs
 fits = cell(1, numel(models));
 for i = 1:numel(models)
     fits{i} = fit_one(models(i), t, dy, ts, ton, toff, u_on, opts);
@@ -106,7 +94,7 @@ for i = 1:numel(models)
 end
 fprintf('Selected (simplest within %.0f %% of best RMSE): %s\n\n', (rmse_tol-1)*100, models(sel).name);
 
-%% ---------------- Selected plant ----------------
+%% selected plant
 f = fits{sel};  p = f.p;
 switch models(sel).type
     case 'P1D',    K = p(1); taus = p(2);        Ld = p(3);
