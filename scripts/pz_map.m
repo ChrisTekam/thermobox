@@ -1,8 +1,5 @@
-%% pz_map.m
-% Pole-zero map (s-plane) of the CLOSED-LOOP transfer function T(s), using
-% MATLAB's built-in pzmap. Every pole and zero gets a small label with its
-% location. Saved as .fig and as a 500 dpi .png.
-% REQUIRES: Control System Toolbox (R2016b or newer)
+
+% Locations of system poles and zeros
 
 clear; close all; clc;
 
