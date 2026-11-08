@@ -1,0 +1,464 @@
+\documentclass[10pt, a4paper, twocolumn]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{mathtools}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\usepackage{bm}
+\usepackage{microtype}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}
+\setstretch{1.3}
+\raggedbottom
+\usepackage{parskip}
+\usepackage{tcolorbox}
+\usepackage{abstract}
+\usepackage{blindtext}
+\usepackage{titlesec}
+
+\sloppy
+
+\usepackage{siunitx}
+\sisetup{group-digits = integer}
+\usepackage[version=4]{mhchem}
+
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{enumitem}
+\setlist[enumerate]{nosep, leftmargin=*}
+
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+
+\usepackage[hidelinks]{hyperref}
+\usepackage[english]{cleveref}
+\usepackage{csquotes}
+\usepackage[backend=biber, style=ieee]{biblatex}
+\addbibresource{thermoboxrefs.bib}
+\urlstyle{same}
+\DefineBibliographyStrings{english}{
+	url = {Link},
+}
+
+
+\renewcommand*{\bibfont}{\footnotesize}
+\setlength{\bibitemsep}{2pt plus 1pt}
+
+\captionsetup{font=small, skip=6pt}
+\captionsetup[table]{skip=3pt}
+
+\setlength{\intextsep}{6pt plus 1pt minus 1pt}
+
+\titlespacing*{\section}{0pt}{1.5ex plus 0.5ex minus 0.3ex}{0.8ex plus 0.2ex}
+
+\newlength{\symA}\newlength{\symB}\newlength{\symC}
+\newcommand{\symrow}[3]{\noindent
+\parbox[t]{\symA}{\centering #1\strut}\hspace{4pt}%
+\parbox[t]{\symB}{\raggedright #2\strut}\hspace{4pt}%
+\parbox[t]{\symC}{\centering #3\strut}\par}
+\newcommand{\symrule}[1]{\par\nointerlineskip\noindent\rule{\linewidth}{#1}\par\nointerlineskip}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\tablesetup}{\small\setstretch{1.1}\setlength{\tabcolsep}{4pt}}
+
+\newcommand{\upsub}[1]{_{\mathrm{#1}}}
+
+\titleformat{\section}
+{\normalfont\large\scshape\filcenter}
+{\thesection.}
+{1em}
+{}
+\renewcommand{\thesection}{\Roman{section}}
+
+\crefname{section}{Section}{Sections}
+\Crefname{section}{Section}{Sections}
+\crefname{appendix}{Appendix}{Appendices}
+\Crefname{appendix}{Appendix}{Appendices}
+\crefname{equation}{Eq.}{Eqs.}
+\Crefname{equation}{Equation}{Equations}
+
+\begin{document}
+	\twocolumn[{%
+	\noindent
+	\begin{minipage}[c]{0.78\textwidth}
+		\raggedright
+		{\Large\textbf{Design and Implementation of an Arduino-Based \\ Thermal PI Control System}\par}
+		\vspace{0.5em}
+		{\large R. Khedoe, D. Sewratan, C. Tekam and D. Wartim\par}
+		\vspace{0.3em}
+		{\normalsize BSc. Electrical Engineering, FTeW, AdeKUS, Paramaribo, Suriname\par}
+	\end{minipage}%
+	\hfill
+	\begin{minipage}[c]{0.18\textwidth}
+		\raggedleft
+		\includegraphics[width=2.75cm]{figuur_adekus_logo.png}
+	\end{minipage}
+
+	\vspace{0.5em}
+	\noindent\rule{\linewidth}{0.8pt}
+	\vspace{0.7em}
+	}]
+	
+	\section*{Abstract}
+	Thermal control systems are widely used and have applications in semiconductor manufacturing and thermal power plants. However, thermal control systems are slow, limited by the actuator, and sensitive to disturbances. Recent work has attempted to solve these problems with PID simulations or complex algorithms. These approaches are valid, but quite complex. In contrast, this project regulates temperature inside a small foam box, utilizing MATLAB scripts and PI logic on Arduino. From the results, the setpoint is maintained, but the overshoot requirements are not achieved. The plant model cannot describe the system dynamics. Further analysis is needed to either tune the PI controller or accurately model the plant.
+	
+	\small{\textit{Index Terms - Thermal control, PI, MATLAB, Arduino}} 
+	\section{Introduction}
+	Thermal systems have many industrial applications, such as semiconductor manufacturing and thermal power plants \cite{S2214157X2600986X}. Therefore, thermal control is crucial for achieving accurate measurements, maintaining production quality and optimizing energy usage \cite{arroyo2026temperature,organomation2026temperature}. However, thermal control systems also face many challenges, such as disturbances, actuator limitations, slow dynamics and delay \cite{S2214157X2600986X,mdpi2026processes}. 
+	
+	By designing a suitable controller, many of these issues are addressed \cite{mdpi2026processes,aip2024comparative}. For most (industrial) thermal processes, Proportional Integral Derivative (PID) control is implemented, but depending on the plant and objectives, PI control is sufficient \cite{aip2024comparative}. Previous studies implement PID thermal control only in simulation or use a complex algorithm and plant, where Arduino is exclusively used for data acquisition \cite{S2214157X23009073,S2214157X22004956,S0960077926005242}.
+	
+	In contrast, this project aims to regulate the temperature at a setpoint in a small foam box in both a Simulink model and physical lab experiment. The closed-loop system uses an Arduino Uno to implement PI-control and data acquisition, with controller gains that are selected analytically. The design is evaluated with frequency response theory (Nyquist and Bode) and tested on the physical system under disturbances. The objective is to minimize the settling time and overshoot while also rejecting disturbances.
+	
+	\section{Methods}
+	From the general block diagram for a control system (see \cref{fig:general_block_diagram}) and the available components (see appendix \ref{apx:lists}), design of the system begins.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{general_block_diagram.png}
+		\caption{General block diagram for a control system.}
+		\label{fig:general_block_diagram}
+	\end{figure}
+	The goals are to reduce settling time, overshoot and reject disturbances; therefore it is necessary to choose and design components appropriately (see \cref{tab:system_elements}).
+	
+	\begin{table}[H]
+		\centering
+		\tablesetup
+		\caption{System implementation.}
+		\label{tab:system_elements}
+		\begin{tabularx}{0.85\linewidth}{l Y}
+			\toprule
+			\textbf{Element} & \textbf{Implementation} \\
+			\midrule
+			Controller & PI logic on Arduino Uno \\
+			Actuator & Heater \\
+			Plant & Temperature inside the box \\
+			Feedback sensor & DS18B20 probe \\
+			Signal Conditioner & Heater driver circuit \\
+			\bottomrule
+		\end{tabularx}
+	\end{table}
+	The heater system consists of the heater driver circuit and the power resistor (see \cref{fig:heater_circuit}) and is located inside a small EPS foam box. Assuming it is cube-shaped with an internal volume of \qty{500}{\ml}, wall thickness $t=\qty{2}{\cm}$, and thermal conductivity $\kappait =\qty{0.033}{\watt\per\meter\per\kelvin}$ \cite{Haynes2016}, the plant transfer function is
+	\begin{equation}
+		\begin{aligned}
+			G\upsub{p}(s) &= \frac{\theta(s)}{D(s)} = \frac{\frac{V\upsub{s}^2}{R}\,R\upsub{th}}{R\upsub{th}C\upsub{th} s + 1} \\
+			&=\frac{96.7}{283s+1}.
+		\end{aligned}
+	\end{equation}
+	See appendix \ref{apx:derivation} for the derivation.
+	
+	The block diagram for the thermal control system is shown in \cref{fig:system_block_diagram}.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{system_blockdiagram.png}
+		\caption{Thermal control system block diagram.}
+		\label{fig:system_block_diagram}
+	\end{figure}
+	And this corresponds with
+	\begin{equation}\label{cltf}
+		\begin{aligned}
+			\text{CLTF} &= \frac{96.7(K\upsub{p} s + K\upsub{i})}{283 s^2 + (1+96.7K\upsub{p}) s + 96.7K\upsub{i}}\\
+			&= \frac{0.342(K\upsub{p} s + K\upsub{i})}{s^2 + (0.0035+0.342K\upsub{p}) s + 0.342K\upsub{i}}.
+		\end{aligned}			
+	\end{equation}
+	Utilizing MATLAB/Simulink and the frequency response theory,  system stability and performance is evaluated, before lab tests begin. \Cref{fig:simulink_model} and \ref{fig:system_diagram} illustrate the Simulink model and the system schematic diagram (in lab), respectively.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{simulink_model.png}
+		\caption{Simulink model.}
+		\label{fig:simulink_model}
+	\end{figure}
+	The `27' block adds an offset, ensuring the temperature rise starts from the ambient temperature. Furthermore, unity feedback is assumed, as the probe measures and responds much quicker compared to the rise in the box \cite{mdpi2026engineering}.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{system_diagram.jpg}
+		\caption{In lab system diagram.}
+		\label{fig:system_diagram}
+	\end{figure}
+	
+	By conducting open-loop tests in lab and making use of a function fit script, the `real' plant transfer function can be approximated. Furthermore, closed-loop tests can reveal the effectiveness of K-values derived from calculations and simulations. MATLAB scripts can be utilized to find K-values when calculations become tricky, using the frequency response tuning method. That is, finding $\zeta$ from the \%OS requirements and increasing the frequency of $\frac{K\upsub{i}}{K\upsub{p}}$ such that the desired PM is obtained. Lastly, varying $K\upsub{p}$ until $\left|L(j\omega)\right|$ reaches \qty{0}{\dB}.
+	
+	\section{Results}
+	The Routh-Hurwitz method gives absolute stability ranges $K\upsub{p}>-0.01$ and $K\upsub{i}>0$. For a settling time $T\upsub{s}=\qty{10}{\minute}=\qty{600}{\second}$ and overshoot \%OS $\leq$ \qty{2}{\percent}, exact K-values are found:
+	\begin{equation}
+		\begin{aligned}
+			T_{\mathrm{s}} &= \frac{4}{\zeta \omega_{\mathrm{n}}} \implies \zeta \omega_{\mathrm{n}}=\frac{4}{T_{\mathrm{s}}} \\
+			\zeta \omega_{\mathrm{n}} &= \frac{4}{600} = \qty{0.006667}{\radian\per\second}
+		\end{aligned}
+	\end{equation}
+	\begin{equation}
+		\begin{aligned}
+			\zeta &=\sqrt{\frac{\ln^2{\left(\frac{\%\text{OS}}{100}\right)}}{\pi^2 + \ln^2{\left(\frac{\%\text{OS}}{100}\right)}}} \\
+			&=\sqrt{\frac{\ln^2{\left(\frac{2}{100}\right)}}{\pi^2 + \ln^2{\left(\frac{2}{100}\right)}}}\approx0.7797
+		\end{aligned}
+	\end{equation}
+	Choose $\zeta=0.8>0.7797$. So $\omega\upsub{n}=\qty{0.008334}{\radian\per\second}$. Comparison of \cref{cltf} with the
+	\begin{equation}
+		\begin{aligned}
+			\text{2nd Order Prototype: }\frac{\omega\upsub{n}^2}{s^2 +2\zeta\omega_{\mathrm{n}}s + \omega_{\mathrm{n}}^2},
+		\end{aligned}
+	\end{equation}
+	yields $K\upsub{p}=0.028754$ and $K\upsub{i}=0.000203$. \Cref{fig:polezerolocations}, \ref{fig:nyquist}, \ref{fig:bode}, and \ref{fig:time_response} show the corresponding pole and zero locations, Nyquist plot, Bode plot and simulated time response.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{pole_zero_locations}
+		\caption{Locations of system poles and zeros.}
+		\label{fig:polezerolocations}
+	\end{figure}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.6\linewidth]{nyquist_plot}
+		\caption{System Nyquist plot from $10^{-6}$ to $10^6\ \unit{\radian\per\second}$.}
+		\label{fig:nyquist}
+	\end{figure}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{bode_plot}
+		\caption{System Bode plot with phase margin indicated.}
+		\label{fig:bode}
+	\end{figure}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{temp_response.png}
+		\caption{Time response with disturbance at \qty{1300}{\s}.}
+		\label{fig:time_response}
+	\end{figure}
+	For $K\upsub{p}=0.028754$ and $K\upsub{i}=0.000203$ the system seemingly remains stable for all frequencies and loop gain values, as the -1 point stays on the left of the line (see \cref{fig:nyquist}) and the gain margin (GM) is infinite (see \cref{fig:bode}; the phase plot never reaches \qty{-180}{\degree}). The phase margin (PM) is \qty{75.2}{\degree} at crossover frequency $\omega\upsub{c}=\qty{0.0111}{\radian\per\second}$. Furthermore, the system reaches the setpoint (\qty{40}{\degreeCelsius}) in roughly \qty{600}{\second} with an maximum overshoot of \qty{0.8}{\degreeCelsius} and it rejects the disturbance, a \qty{-10}{\degreeCelsius} drop.
+	
+	However, at the hardware test, the system fails to maintain the setpoint. In fact, it increases beyond \qty{40}{\degreeCelsius}. The test was therefore stopped after around \qty{12}{\minute}. \Cref{fig:timeresponseclosedloopfailed} illustrates this.
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{time_response_closed_loop_failed}
+		\caption{Closed-loop time response in lab.}
+		\label{fig:timeresponseclosedloopfailed}
+	\end{figure}
+	
+	The results of the open-loop test are shown in \cref{fig:timeresponseopenloop}. Note that the power was cut off once the target of \qty{40}{\degreeCelsius} had been reached.
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{time_response_open_loop}
+		\caption{Open-loop time response of system.}
+		\label{fig:timeresponseopenloop}
+	\end{figure}
+	The function fitted from the response is
+	\begin{equation}
+		\begin{aligned}
+			G\upsub{p}=\frac{38.7}{125316s^2+708s+1}
+		\end{aligned}
+	\end{equation}
+	As the characteristic equation (CE) of the CLTF becomes a third-order equation, $K\upsub{p}$ and $K\upsub{i}$ were determined using a frequency response tuning script. The method gives $K\upsub{p}=0.02$ and $K\upsub{i}=0.00004$. \Cref{fig:nyquistplotnewplant}, \ref{fig:bodeplotnewplant}, and \ref{fig:timeresponsenewplant} show the corresponding Bode plot, Nyquist plot and simulated time response.
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.6\linewidth]{nyquist_plot_new_plant}
+		\caption{Nyquist plot of new plant.}
+		\label{fig:nyquistplotnewplant}
+	\end{figure}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{bode_plot_new_plant}
+		\caption{Bode plot of new plant with PM indicated.}
+		\label{fig:bodeplotnewplant}
+	\end{figure}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{time_response_new_plant}
+		\caption{Simulated time response of new plant with disturbance at \qty{3600}{\s}.}
+		\label{fig:timeresponsenewplant}
+	\end{figure}
+	
+	Similar to the previous results, the system remains stable for all frequencies from $10^{-6}$ to $10^6$ \unit{\radian\per\second} and gain values because the -1 point is located to the left at all times and GM = $\infty$. Furthermore, PM = \qty{70.8}{\degree} at $\omega\upsub{c}=\qty{0.00151}{\radian\per\second}$. Although the system can reject disturbances, it is very slow and takes roughly \qty{1500}{\second} to reach the setpoint.
+	
+	\Cref{fig:cltimeresponsenewplant} shows the closed-loop time response of the system with the fitted plant in lab for $K\upsub{p}=0.02$ and $K\upsub{i}=0.00004$. The test shows that the system is unable to reject the disturbance effectively; the overshoot is higher.
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{cl_time_response_new_plant}
+		\caption{Closed-loop time response of system in lab.}
+		\label{fig:cltimeresponsenewplant}
+	\end{figure}
+	
+	\section{Discussion}
+	The first-order plant was modeled with many approximations and assumptions, so the closed-loop results were expected. The closed-loop time response of the system with the fitted plant model performed according to expectations, with the exception of disturbance rejection. The Nyquist plot shows that the thermal system is stable. Regarding the Bode plots, in both cases, GM = $\infty$ and PM = \qty{70}{\degree} - \qty{75}{\degree} for $\omega\in[10^{-6}, 10^6]$.
+	
+	\section{Conclusion}
+	The thermal PI control system was tuned, simulated, tested and evaluated using the described methods. According to the results, simulation and lab tests perform similarly in time but differ in overshoot. The system dynamics cannot be accurately described by the current plant model. Further analysis is needed to model the plant, so that disturbances are rejected within the overshoot requirements. Another possibility is conducting closed-loop tests to better tune the controller.
+	
+	\appendix
+	\renewcommand{\thesection}{\Alph{section}}
+	\numberwithin{equation}{section}
+	\numberwithin{table}{section}
+	\numberwithin{figure}{section}
+	\renewcommand{\theequation}{\thesection.\arabic{equation}}
+	\renewcommand{\thetable}{\thesection.\arabic{table}}
+	\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+
+	\section{List of Materials}\label{apx:lists}
+	\Cref{tab:components} and \ref{tab:instruments} list the applied components and instruments and is based on availability (at the time).
+	\begin{table}[H]
+		\centering
+		\tablesetup
+		\caption{Applied components.}
+		\label{tab:components}
+		\begin{tabularx}{\linewidth}{l c Y}
+			\toprule
+			\textbf{Component} & \textbf{Amount} & \textbf{Use} \\
+			\midrule
+			Resistors & 3 & Pull-up, pull-down and current-limiting resistors. \\
+			IRF44ZN MOSFET & 1 & Part of heater driver. \\
+			2N3904 BJT & 1 & Driving the gate of the MOSFET. \\
+			DS18B20 probe & 1 & Feedback sensor. \\
+			Power resistor & 1 & Functions as plant. \\
+			Arduino Uno & 1 & Programmed with PI control logic. \\
+			EPS foam box & 1 & Closed, insulated environment. \\
+			\bottomrule
+		\end{tabularx}
+	\end{table}
+	\begin{table}[H]
+		\centering
+		\tablesetup
+		\caption{Required instruments.}
+		\label{tab:instruments}
+		\begin{tabularx}{\linewidth}{l c Y}
+			\toprule
+			\textbf{Instrument} & \textbf{Amount} & \textbf{Use} \\
+			\midrule
+			Digital multimeter & 1 & Checking voltages and resistor values. \\
+			DC source & 1 & Supplying the heater with voltage. \\
+			\bottomrule
+		\end{tabularx}
+	\end{table}
+	
+	\section{Heater System}\label{apx:heater_system}
+	The heater driver circuit is necessary because the Arduino is unable to deliver enough current.
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{heater_no_bg.png}
+		\caption{Heater circuit. }
+		\label{fig:heater_circuit}
+	\end{figure}
+	
+	If a PWM signal is sent through, the MOSFET saturates and the drain is pulled to ground, so current flows through the power resistor, thereby producing heat. The heater will switch on and off depending on the duty cycle $D$.
+	
+	\section{Derivation of Plant}\label{apx:derivation}
+	The plant is modeled as a first-order system with heater duty cycle as the input and temperature rise as the output. The air, the heater resistor and the inner foam is treated as one body at a temperature $T$. Another assumption is that there are no leaks, so heat escapes only by conduction through the walls. A lot of other assumptions were made in order to approximate a (somewhat) realistic first-order thermal plant and reduce complexity.
+	
+	Let $C\upsub{th}$ be the thermal capacitance of everything inside the box, $R\upsub{th}$ the thermal resistance, $P\upsub{in}$ the heater power and $T\upsub{amb}$ the (constant) ambient temperature. Then
+	\begin{equation}
+		C\upsub{th}\frac{dT}{dt} = P\upsub{in}(t) - \frac{T(t)-T\upsub{amb}}{R\upsub{th}}.
+	\end{equation}
+	With temperature rise $\theta(t) = T(t) - T\upsub{amb}$, this becomes $C\upsub{th}\,\frac{d\theta}{dt} + \frac{\theta}{R\upsub{th}} = P\upsub{in}(t)$. Taking the Laplace transform (with zero initial conditions) gives
+	\begin{equation}
+		\frac{\theta(s)}{P\upsub{in}(s)} = \frac{R\upsub{th}}{R\upsub{th}C\upsub{th}\,s + 1}.
+	\end{equation}
+	The heater is a power resistor ($R = \qty{6.2}{\ohm}$) driven by PWM from a supply $V\upsub{s} = \qty{7.5}{\volt}$. The average power is given by
+	\begin{equation}
+		P\upsub{in} = D\,\frac{V\upsub{s}^2}{R},
+	\end{equation}
+	where $D \in [0,1]$. The maximum power is $P\upsub{max} = (7.5)^2/6.2 \approx \qty{9.07}{\watt}$ (safely below the resistor's max. of \qty{10}{\watt}). The plant from duty cycle to temperature rise is therefore
+	\begin{equation}
+		G\upsub{p}(s) = \frac{\theta(s)}{D(s)} = \frac{K}{\tau s + 1},
+	\end{equation}
+	with
+	\begin{equation}
+		\begin{aligned}
+			&K = \frac{V\upsub{s}^2}{R}\,R\upsub{th}, \\
+			&\tau = R\upsub{th}C\upsub{th}.
+		\end{aligned}
+	\end{equation}
+	Assuming the foam box is a cube with an inside volume of \qty{500}{\ml}, the inner side length is $a = \qty{0.0794}{\meter}$ and inner surface area $A\upsub{in} = \qty{0.0378}{\meter\squared}$. With an assumed wall thickness $t = \qty{2}{\cm}$, the outer side length is $a\upsub{out} = \qty{0.1194}{\meter}$ and the outer area $A\upsub{out} = \qty{0.0855}{\meter\squared}$. The average area is $A\upsub{eff} = \sqrt{A\upsub{in}A\upsub{out}} = \qty{0.0568}{\meter\squared}$. And with the EPS thermal conductivity $\kappa = \qty{0.033}{\watt\per\meter\per\kelvin}$ \cite{Haynes2016},
+	\begin{equation}
+		\begin{aligned}
+			R\upsub{th} &= \frac{t}{\kappa A\upsub{eff}} \\
+			&= \frac{0.02}{0.033 \times 0.0568} = \qty{10.66}{\degreeCelsius\per\watt}.
+		\end{aligned}
+	\end{equation}
+	Working with the average (effective) area gives a value that is a better approximation than just using $A\upsub{in}$ or $A\upsub{out}$.
+	
+	$C\upsub{th}$ is the sum of the parts inside the box. The air contributes $C\upsub{air} = \rho\upsub{air}c\upsub{air}V = \qty{0.6}{\joule\per\degreeCelsius}$. The EPS walls (assumed $\rho = \qty{25}{\kilogram\per\meter\cubed}$, $c = \qty{1300}{\joule\per\kilogram\per\kelvin}$ \cite{Haynes2016}, wall volume \qty{1.201e-3}{\meter\cubed}) have a mass of \qty{30}{\gram}, so a full capacitance of \qty{39}{\joule\per\degreeCelsius}. However for just the inside part of the box, $C\upsub{wall} = \qty{19.5}{\joule\per\degreeCelsius}$. The resistor is assumed to have a mass of \qty{8}{\gram} and $c = \qty{800}{\joule\per\kilogram\per\kelvin}$, giving $C\upsub{res} = \qty{6.4}{\joule\per\degreeCelsius}$. The total is
+	\begin{equation}
+		\begin{aligned}
+			C\upsub{th} &= 0.6 + 19.5 + 6.4 \\
+			&= \qty{26.5}{\joule\per\degreeCelsius}.
+		\end{aligned}
+	\end{equation}
+	The model parameters are
+	\begin{equation}
+		\begin{aligned}
+			K &= 9.07 \times 10.66 \approx \qty{96.7}{\degreeCelsius}\text{ per unit duty}, \\
+			\tau &= 10.66 \times 26.5 \approx \qty{283}{\second},
+		\end{aligned}
+	\end{equation}
+	so this means
+	\begin{equation}
+		G\upsub{p}(s) = \frac{\theta(s)}{D(s)} = \frac{96.7}{283s + 1}.
+	\end{equation}
+	$G\upsub{p}$ is a decent starting point for the `real' transfer function of the plant, as this model neglects the effects of the temperature balance between the air and the foam box. In reality, the box has leaks and $C\upsub{th}$ cannot be added together.
+	
+	\section{List of Symbols}
+	\vspace{0.3cm}
+	\begingroup
+	\footnotesize\setstretch{1.1}
+	\setlength{\parskip}{0pt}\setlength{\parindent}{0pt}
+	\clubpenalty=0 \widowpenalty=0
+	\setlength{\symA}{2.0cm}\setlength{\symC}{2.0cm}
+	\setlength{\symB}{\dimexpr\linewidth-\symA-\symC-8pt\relax}
+	\refstepcounter{table}\label{tab:symbols}%
+	{\centering Table~\thetable: Symbol list.\par}
+	\nopagebreak\vskip 3pt
+	\symrule{0.08em}\nopagebreak\vskip 2pt
+	\symrow{\textbf{Symbol}}{\textbf{Meaning}}{\textbf{Unit}}\nopagebreak
+	\vskip 2pt\symrule{0.05em}\vskip 2pt
+		\symrow{$t$}{Wall thickness}{\unit{\meter}}
+		\symrow{$\kappa$}{Thermal conductivity of EPS}{\unit{\watt\per\meter\per\kelvin}}
+		\symrow{$G\upsub{p}(s)$}{Plant transfer function}{\unit{\degreeCelsius}}
+		\symrow{$\theta$}{Temperature rise}{\unit{\degreeCelsius}}
+		\symrow{$D$}{Heater duty cycle}{--}
+		\symrow{$V\upsub{s}$}{Heater supply voltage}{\unit{\volt}}
+		\symrow{$R$}{Power resistor resistance}{\unit{\ohm}}
+		\symrow{$R\upsub{th}$}{Thermal resistance of the box walls}{\unit{\degreeCelsius\per\watt}}
+		\symrow{$C\upsub{th}$}{Total thermal capacitance inside the box}{\unit{\joule\per\degreeCelsius}}
+		\symrow{$K\upsub{p}$}{Proportional gain}{\unit{\per\degreeCelsius}}
+		\symrow{$K\upsub{i}$}{Integral gain}{\unit{\per\degreeCelsius\per\second}}
+		\symrow{$T\upsub{s}$}{Settling time}{\unit{\second}}
+		\symrow{\%OS}{Percent overshoot}{\unit{\percent}}
+		\symrow{$\zeta$}{Damping ratio}{--}
+		\symrow{$\omega\upsub{n}$}{Natural frequency}{\unit{\radian\per\second}}
+		\symrow{GM}{Gain margin}{\unit{\decibel}}
+		\symrow{PM}{Phase margin}{\unit{\degree}}
+		\symrow{$\omega\upsub{c}$}{Gain crossover frequency}{\unit{\radian\per\second}}
+		\symrow{$L(j\omega)$}{Open-loop (loop) transfer function}{\unit{\decibel}}
+		\symrow{$T$}{Temperature inside the box}{\unit{\degreeCelsius}}
+		\symrow{$P\upsub{in}$}{Average heater power}{\unit{\watt}}
+		\symrow{$T\upsub{amb}$}{Ambient temperature}{\unit{\degreeCelsius}}
+		\symrow{$P\upsub{max}$}{Maximum heater power}{\unit{\watt}}
+		\symrow{$K$}{Plant gain}{\unit{\degreeCelsius}}
+		\symrow{$\tau$}{Plant time constant}{\unit{\second}}
+		\symrow{$a$, $a\upsub{out}$}{Inner and outer side length}{\unit{\meter}}
+		\symrow{$A\upsub{in}$, $A\upsub{out}$}{Inner and outer surface area}{\unit{\meter\squared}}
+		\symrow{$A\upsub{eff}$}{Effective (average) wall area}{\unit{\meter\squared}}
+		\symrow{$C\upsub{air}$}{Thermal capacitance of the air}{\unit{\joule\per\degreeCelsius}}
+		\symrow{$\rho$}{Density}{\unit{\kilogram\per\meter\cubed}}
+		\symrow{$c$}{Specific heat capacity}{\unit{\joule\per\kilogram\per\kelvin}}
+		\symrow{$V$}{Internal volume of the box}{\unit{\meter\cubed}}
+		\symrow{$C\upsub{wall}$}{Thermal capacitance of the inner foam wall}{\unit{\joule\per\degreeCelsius}}
+		\symrow{$C\upsub{res}$}{Thermal capacitance of the heater}{\unit{\joule\per\degreeCelsius}}
+	\vskip 2pt\symrule{0.08em}
+	\endgroup
+	
+	\section{Additional Information}
+	For more information or to view the code and supplementary documentation, visit the GitHub repository by clicking \href{https://github.com/ChrisTekam/thermobox}{here}.
+	
+	\section*{References}
+	\printbibliography[heading=none]
+	
+\end{document}
