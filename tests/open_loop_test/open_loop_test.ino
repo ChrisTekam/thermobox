@@ -1,5 +1,5 @@
 /*
-  Open-loop step tes of the thermal plant (no PID, no setpoint).
+  Open-loop step test of the thermal plant (no PID, no setpoint).
 
   On power-up / reset:
     1. 0 to BASELINE_S : heater off (logs ambient temperature)
