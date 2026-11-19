@@ -34,7 +34,7 @@ A power resistor acts as the heater and is switched by an Arduino Uno through a 
 
 ## Getting started
 
-1. Build the circuit as shown in the heater driver diagram (see `assets/`).
+1. Build the circuit as shown in the schematics (see `assets/`).
 2. Open the Arduino code from `source/` in the Arduino IDE, install the libraries from `libraries/`, and upload it to the Uno.
 3. To log data, run the script `log_serial.py` while the Arduino is connected (it records one sample per second to a `.csv`).
 4. To run the simulation, open the `.slx` files in `simulation/` with MATLAB/Simulink.
