@@ -1,5 +1,4 @@
 /*
-  OPEN_LOOP_TEST.ino
   Open-loop step test of the thermal plant (no PID, no setpoint).
 
   On power-up / reset:
