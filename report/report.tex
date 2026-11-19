@@ -65,6 +65,13 @@
 \parbox[t]{\symB}{\raggedright #2\strut}\hspace{4pt}%
 \parbox[t]{\symC}{\centering #3\strut}\par}
 \newcommand{\symrule}[1]{\par\nointerlineskip\noindent\rule{\linewidth}{#1}\par\nointerlineskip}
+\newcommand{\datarow}[6]{\noindent
+\parbox[t]{\symA}{\centering #1\strut}\hspace{3pt}%
+\parbox[t]{\symA}{\centering #2\strut}\hspace{3pt}%
+\parbox[t]{\symA}{\centering #3\strut}\hspace{3pt}%
+\parbox[t]{\symA}{\centering #4\strut}\hspace{3pt}%
+\parbox[t]{\symA}{\centering #5\strut}\hspace{3pt}%
+\parbox[t]{\symA}{\centering #6\strut}\par}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \newcommand{\tablesetup}{\small\setstretch{1.1}\setlength{\tabcolsep}{4pt}}
 
@@ -107,7 +114,7 @@
 	}]
 	
 	\section*{Abstract}
-	Thermal control systems are widely used and have applications in semiconductor manufacturing and thermal power plants. However, thermal control systems are slow, limited by the actuator, and sensitive to disturbances. Recent work has attempted to solve these problems with PID simulations or complex algorithms. These approaches are valid, but quite complex. In contrast, this project regulates temperature inside a small foam box, utilizing MATLAB scripts and PI logic on Arduino. From the results, the setpoint is maintained, but the overshoot requirements are not achieved. The plant model cannot describe the system dynamics. Further analysis is needed to either tune the PI controller or accurately model the plant.
+	Thermal control systems are widely used and have applications in chip manufacturing and power plants. However, thermal control systems are slow, limited by the actuator, and sensitive to disturbances. Recent work has attempted to solve these problems with PID simulations or complex algorithms. These approaches are valid, but quite complex. In contrast, this project regulates temperature inside a small foam box, utilizing MATLAB scripts and PI logic on Arduino. From the results, the setpoint is maintained, but the disturbance rejection and overshoot requirements are not fully achieved because the plant model cannot describe the system dynamics. Further analysis is needed to accurately model the plant and tune the PI controller.
 	
 	\small{\textit{Index Terms - Thermal control, PI, MATLAB, Arduino}} 
 	\section{Introduction}
@@ -138,10 +145,12 @@
 			\textbf{Element} & \textbf{Implementation} \\
 			\midrule
 			Controller & PI logic on Arduino Uno \\
-			Actuator & Heater \\
+			Actuator & Heater \\			
+			Disturbance & Temporarily opening the box \\
 			Plant & Temperature inside the box \\
 			Feedback sensor & DS18B20 probe \\
 			Signal Conditioner & Heater driver circuit \\
+
 			\bottomrule
 		\end{tabularx}
 	\end{table}
@@ -169,7 +178,7 @@
 			&= \frac{0.342(K\upsub{p} s + K\upsub{i})}{s^2 + (0.0035+0.342K\upsub{p}) s + 0.342K\upsub{i}}.
 		\end{aligned}			
 	\end{equation}
-	Utilizing MATLAB/Simulink and the frequency response theory,  system stability and performance is evaluated, before lab tests begin. \Cref{fig:simulink_model} and \ref{fig:system_diagram} illustrate the Simulink model and the system schematic diagram (in lab), respectively.
+	Utilizing MATLAB/Simulink and the frequency response theory,  system stability and performance is evaluated, before lab tests begin. \Cref{fig:simulink_model}, \ref{fig:system_diagram}, \ref{fig:thermoboxschematic}, and \ref{fig:thermoboxinlab} show the Simulink model as well as the system diagram, schematic and setup in lab 
 	
 	\begin{figure}[H]
 		\centering
@@ -185,11 +194,23 @@
 		\caption{In lab system diagram.}
 		\label{fig:system_diagram}
 	\end{figure}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{thermobox_schematic}
+		\caption{System schematic.}
+		\label{fig:thermoboxschematic}
+	\end{figure}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.98\linewidth]{thermobox_in_lab}
+		\caption{System setup in lab.}
+		\label{fig:thermoboxinlab}
+	\end{figure}
 	
 	By conducting open-loop tests in lab and making use of a function fit script, the `real' plant transfer function can be approximated. Furthermore, closed-loop tests can reveal the effectiveness of K-values derived from calculations and simulations. MATLAB scripts can be utilized to find K-values when calculations become tricky, using the frequency response tuning method. That is, finding $\zeta$ from the \%OS requirements and increasing the frequency of $\frac{K\upsub{i}}{K\upsub{p}}$ such that the desired PM is obtained. Lastly, varying $K\upsub{p}$ until $\left|L(j\omega)\right|$ reaches \qty{0}{\dB}.
 	
 	\section{Results}
-	The Routh-Hurwitz method gives absolute stability ranges $K\upsub{p}>-0.01$ and $K\upsub{i}>0$. For a settling time $T\upsub{s}=\qty{10}{\minute}=\qty{600}{\second}$ and overshoot \%OS $\leq$ \qty{2}{\percent}, exact K-values are found:
+	The Routh-Hurwitz method gives absolute stability ranges $K\upsub{p}>-0.0103$ and $K\upsub{i}>0$. For a settling time $T\upsub{s}=\qty{10}{\minute}=\qty{600}{\second}$ and overshoot OS $\leq$ \qty{2}{\percent}, exact K-values are found:
 	\begin{equation}
 		\begin{aligned}
 			T_{\mathrm{s}} &= \frac{4}{\zeta \omega_{\mathrm{n}}} \implies \zeta \omega_{\mathrm{n}}=\frac{4}{T_{\mathrm{s}}} \\
@@ -279,7 +300,7 @@
 	
 	Similar to the previous results, the system remains stable for all frequencies from $10^{-6}$ to $10^6$ \unit{\radian\per\second} and gain values because the -1 point is located to the left at all times and GM = $\infty$. Furthermore, PM = \qty{70.8}{\degree} at $\omega\upsub{c}=\qty{0.00151}{\radian\per\second}$. Although the system can reject disturbances, it is very slow and takes roughly \qty{1500}{\second} to reach the setpoint.
 	
-	\Cref{fig:cltimeresponsenewplant} shows the closed-loop time response of the system with the fitted plant in lab for $K\upsub{p}=0.02$ and $K\upsub{i}=0.00004$. The test shows that the system is unable to reject the disturbance effectively; the overshoot is higher.
+	\Cref{fig:cltimeresponsenewplant} shows the closed-loop time response of the system with the fitted plant in lab for $K\upsub{p}=0.02$ and $K\upsub{i}=0.00004$. The test shows that the system is slower and unable to reject the disturbance effectively; the overshoot is higher.
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=0.98\linewidth]{cl_time_response_new_plant}
@@ -287,11 +308,13 @@
 		\label{fig:cltimeresponsenewplant}
 	\end{figure}
 	
-	\section{Discussion}
-	The first-order plant was modeled with many approximations and assumptions, so the closed-loop results were expected. The closed-loop time response of the system with the fitted plant model performed according to expectations, with the exception of disturbance rejection. The Nyquist plot shows that the thermal system is stable. Regarding the Bode plots, in both cases, GM = $\infty$ and PM = \qty{70}{\degree} - \qty{75}{\degree} for $\omega\in[10^{-6}, 10^6]$.
-	
-	\section{Conclusion}
-	The thermal PI control system was tuned, simulated, tested and evaluated using the described methods. According to the results, simulation and lab tests perform similarly in time but differ in overshoot. The system dynamics cannot be accurately described by the current plant model. Further analysis is needed to model the plant, so that disturbances are rejected within the overshoot requirements. Another possibility is conducting closed-loop tests to better tune the controller.
+\section{Discussion}
+The first-order plant was modeled with many approximations and assumptions, so deviations in the lab were expected. The model gain of \qty{96.7}{\degreeCelsius} per unit duty cycle is much higher than the fitted gain of \qty{38.7}{\degreeCelsius}, and the open-loop response starts much slower than the model describes. The temperature also kept rising to \qty{43.6}{\degreeCelsius} after the supply was cut off. This suggests that the model parameters, $R\upsub{th}$ and $C\upsub{th}$, were incorrect. The first controller was designed for a plant with a higher gain and less delay than the real one, which likely explains why the system did not settle at the setpoint in the lab (see \cref{fig:timeresponseclosedloopfailed}). 
+
+With the fitted plant, the lab response is close to the simulation in time: the setpoint is reached after roughly \qty{1400}{\second}, compared to \qty{1500}{\second} in the simulation. However, neither design meets the settling time of \qty{600}{\second} of the first plant, which makes sense, as the fitted plant is second-order. The fitted plant itself needs about \qty{2000}{\second} to settle, so the requirement is most likely too strict. The overshoot is also higher than the requirement of \qty{2}{\percent}. Before the disturbance the temperature peaks at \qty{40.7}{\degreeCelsius}, which is under 2 \% OS. After the disturbance at roughly \qty{2700}{\second}, it drops to \qty{34.9}{\degreeCelsius}, overshoots to \qty{41.6}{\degreeCelsius} (4 \% OS) and slowly returns to \qty{40.5}{\degreeCelsius} at the end of the test (see \cref{fig:cltimeresponsenewplant}). This slow recovery is expected, as the heater cannot cool and the excess heat has to escape through the foam walls. The controller seems unable to reject disturbances without exceeding the overshoot requirements. Furthermore, GM $=\infty$ and PM $\approx$ \qty{70}{\degree} - \qty{75}{\degree} only hold for the models. Delay, sensor dynamics and the duty cycle limit are not included, so the margins in the lab are smaller. Lastly, the tests started at different temperatures (\qty{26.4}{\degreeCelsius} and \qty{29.8}{\degreeCelsius}), while the simulation starts at \qty{27}{\degreeCelsius} (ambient temperature), and, for the sake of time, each test was performed once.
+
+\section{Conclusion}
+A thermal PI control system was designed, simulated and tested on a heater in a foam box. The first design, based on a first-order plant with a gain of \qty{96.7}{\degreeCelsius}, reaches the setpoint in roughly \qty{600}{\second} in simulation with an overshoot of \qty{0.8}{\degreeCelsius}, but fails in the lab, as the temperature rises beyond the setpoint. A second-order plant was then fitted to the open-loop test, giving $K\upsub{p}=0.02$ and $K\upsub{i}=0.00004$. This design reaches the setpoint in the lab after roughly \qty{1400}{\second}, but the disturbance is rejected slowly with an overshoot of \qty{1.6}{\degreeCelsius} (4 \%). The first-order plant model cannot describe the system dynamics and the controller for the fitted model cannot reject disturbances without exceeding the overshoot requirements. So, the objectives have not been fully achieved. Further work and analysis includes conducting more tests, deriving a more accurate plant model, and redesigning the controller to meet the requirements.
 	
 	\appendix
 	\renewcommand{\thesection}{\Alph{section}}
@@ -404,6 +427,164 @@
 	\end{equation}
 	$G\upsub{p}$ is a decent starting point for the `real' transfer function of the plant, as this model neglects the effects of the temperature balance between the air and the foam box. In reality, the box has leaks and $C\upsub{th}$ cannot be added together.
 	
+	\section{Lab Test Data}\label{apx:data}
+	\Cref{tab:data_openloop} and \ref{tab:data_closedloop} list the logged open-loop and closed-loop lab data. The raw logs (\qty{1}{\second} sampling) were cleaned by rounding the logger timestamps to whole seconds, rounding the temperature to \qty{0.1}{\degreeCelsius}, and expressing the PWM as duty cycle in percent. For readability, the tables show every \qty{10}{\second} (open-loop) and every \qty{40}{\second} (closed-loop) sample. Results run from the left column to the right.\par
+	\vspace{0.3cm}
+	\begingroup
+	\scriptsize\setstretch{1.1}
+	\setlength{\parskip}{0pt}\setlength{\parindent}{0pt}
+	\clubpenalty=0 \widowpenalty=0
+	\setlength{\symA}{\dimexpr(\linewidth-16pt)/6\relax}
+	\refstepcounter{table}\label{tab:data_openloop}%
+	{\centering\small Table~\thetable: Open-loop test data in lab (sampled every \qty{10}{\second}).\par}
+	\nopagebreak\vskip 3pt
+	\symrule{0.08em}\nopagebreak\vskip 2pt
+	\datarow{{\bfseries $\bm{t}$ (\unit[mode=text,reset-text-series=false]{\second})}}{{\bfseries $\bm{T}$ (\unit[mode=text,reset-text-series=false]{\degreeCelsius})}}{{\bfseries PWM (\unit[mode=text,reset-text-series=false]{\percent})}\footnotemark}{{\bfseries $\bm{t}$ (\unit[mode=text,reset-text-series=false]{\second})}}{{\bfseries $\bm{T}$ (\unit[mode=text,reset-text-series=false]{\degreeCelsius})}}{{\bfseries PWM (\unit[mode=text,reset-text-series=false]{\percent})}}\nopagebreak
+	\footnotetext{The logged duty cycle stays at \qty{100}{\percent} because the DC supply of the heater was cut off when \qty{40}{\degreeCelsius} was reached (at $t\approx\qty{490}{\second}$); the temperature then peaked and decayed.}
+	\vskip 2pt\symrule{0.05em}\nopagebreak\vskip 2pt
+	\datarow{10}{26.4}{0.0}{640}{43.5}{100.0}
+	\datarow{20}{26.4}{0.0}{650}{43.6}{100.0}
+	\datarow{30}{26.4}{0.0}{660}{43.6}{100.0}
+	\datarow{40}{26.4}{100.0}{670}{43.6}{100.0}
+	\datarow{50}{26.5}{100.0}{680}{43.6}{100.0}
+	\datarow{60}{26.5}{100.0}{690}{43.6}{100.0}
+	\datarow{70}{26.5}{100.0}{700}{43.6}{100.0}
+	\datarow{80}{26.6}{100.0}{710}{43.6}{100.0}
+	\datarow{90}{26.7}{100.0}{720}{43.5}{100.0}
+	\datarow{100}{26.8}{100.0}{730}{43.4}{100.0}
+	\datarow{110}{26.9}{100.0}{740}{43.4}{100.0}
+	\datarow{120}{27.0}{100.0}{750}{43.3}{100.0}
+	\datarow{130}{27.2}{100.0}{760}{43.2}{100.0}
+	\datarow{140}{27.3}{100.0}{770}{43.2}{100.0}
+	\datarow{150}{27.5}{100.0}{780}{43.1}{100.0}
+	\datarow{160}{27.8}{100.0}{790}{42.9}{100.0}
+	\datarow{170}{27.9}{100.0}{800}{42.9}{100.0}
+	\datarow{180}{28.2}{100.0}{810}{42.8}{100.0}
+	\datarow{190}{28.4}{100.0}{820}{42.6}{100.0}
+	\datarow{200}{28.8}{100.0}{830}{42.5}{100.0}
+	\datarow{210}{29.1}{100.0}{840}{42.4}{100.0}
+	\datarow{220}{29.4}{100.0}{850}{42.2}{100.0}
+	\datarow{230}{29.7}{100.0}{860}{42.1}{100.0}
+	\datarow{240}{30.0}{100.0}{870}{42.0}{100.0}
+	\datarow{250}{30.4}{100.0}{880}{41.9}{100.0}
+	\datarow{260}{30.8}{100.0}{890}{41.8}{100.0}
+	\datarow{270}{31.1}{100.0}{900}{41.6}{100.0}
+	\datarow{280}{31.4}{100.0}{910}{41.4}{100.0}
+	\datarow{290}{31.8}{100.0}{920}{41.3}{100.0}
+	\datarow{300}{32.2}{100.0}{930}{41.2}{100.0}
+	\datarow{310}{32.6}{100.0}{940}{41.0}{100.0}
+	\datarow{320}{33.0}{100.0}{950}{40.9}{100.0}
+	\datarow{330}{33.4}{100.0}{960}{40.8}{100.0}
+	\datarow{340}{33.8}{100.0}{970}{40.6}{100.0}
+	\datarow{350}{34.2}{100.0}{980}{40.4}{100.0}
+	\datarow{360}{34.6}{100.0}{990}{40.3}{100.0}
+	\datarow{370}{35.0}{100.0}{1000}{40.1}{100.0}
+	\datarow{380}{35.4}{100.0}{1010}{40.0}{100.0}
+	\datarow{390}{35.8}{100.0}{1020}{39.8}{100.0}
+	\datarow{400}{36.2}{100.0}{1030}{39.7}{100.0}
+	\datarow{410}{36.7}{100.0}{1040}{39.5}{100.0}
+	\datarow{420}{37.1}{100.0}{1050}{39.4}{100.0}
+	\datarow{430}{37.5}{100.0}{1060}{39.2}{100.0}
+	\datarow{440}{37.9}{100.0}{1070}{39.0}{100.0}
+	\datarow{450}{38.3}{100.0}{1080}{38.8}{100.0}
+	\datarow{460}{38.8}{100.0}{1090}{38.6}{100.0}
+	\datarow{470}{39.1}{100.0}{1100}{38.4}{100.0}
+	\datarow{480}{39.6}{100.0}{1110}{38.2}{100.0}
+	\datarow{490}{40.0}{100.0}{1120}{38.0}{100.0}
+	\datarow{500}{40.4}{100.0}{1130}{37.8}{100.0}
+	\datarow{510}{40.8}{100.0}{1140}{37.5}{100.0}
+	\datarow{520}{41.1}{100.0}{1150}{37.3}{100.0}
+	\datarow{530}{41.5}{100.0}{1160}{37.1}{100.0}
+	\datarow{540}{41.8}{100.0}{1170}{36.9}{100.0}
+	\datarow{550}{42.1}{100.0}{1180}{36.7}{100.0}
+	\datarow{560}{42.4}{100.0}{1190}{36.4}{100.0}
+	\datarow{570}{42.6}{100.0}{1200}{36.1}{100.0}
+	\datarow{580}{42.8}{100.0}{1210}{35.8}{100.0}
+	\datarow{590}{42.9}{100.0}{1220}{35.6}{100.0}
+	\datarow{600}{43.1}{100.0}{1230}{35.4}{100.0}
+	\datarow{610}{43.2}{100.0}{1240}{35.2}{100.0}
+	\datarow{620}{43.4}{100.0}{1250}{35.1}{100.0}
+	\datarow{630}{43.4}{100.0}{1260}{34.9}{100.0}
+	\vskip 2pt\symrule{0.08em}
+	\endgroup
+	\vspace{0.5cm}
+	\begingroup
+	\scriptsize\setstretch{1.1}
+	\setlength{\parskip}{0pt}\setlength{\parindent}{0pt}
+	\clubpenalty=0 \widowpenalty=0
+	\setlength{\symA}{\dimexpr(\linewidth-16pt)/6\relax}
+	\refstepcounter{table}\label{tab:data_closedloop}%
+	{\centering\small Table~\thetable: Closed-loop test data in lab (sampled every \qty{40}{\second}).\par}
+	\nopagebreak\vskip 3pt
+	\symrule{0.08em}\nopagebreak\vskip 2pt
+	\datarow{{\bfseries $\bm{t}$ (\unit[mode=text,reset-text-series=false]{\second})}}{{\bfseries $\bm{T}$ (\unit[mode=text,reset-text-series=false]{\degreeCelsius})}}{{\bfseries PWM (\unit[mode=text,reset-text-series=false]{\percent})}}{{\bfseries $\bm{t}$ (\unit[mode=text,reset-text-series=false]{\second})}}{{\bfseries $\bm{T}$ (\unit[mode=text,reset-text-series=false]{\degreeCelsius})}}{{\bfseries PWM (\unit[mode=text,reset-text-series=false]{\percent})}}\nopagebreak
+	\vskip 2pt\symrule{0.05em}\nopagebreak\vskip 2pt
+	\datarow{40}{29.6}{22.5}{2560}{40.3}{27.8}
+	\datarow{80}{29.4}{24.5}{2600}{40.2}{27.9}
+	\datarow{120}{29.3}{26.4}{2640}{40.2}{27.8}
+	\datarow{160}{29.2}{28.3}{2680}{40.2}{27.8}
+	\datarow{200}{29.4}{29.7}{2720}{37.7}{33.1}
+	\datarow{240}{29.6}{30.9}{2760}{35.2}{38.5}
+	\datarow{280}{29.9}{32.0}{2800}{35.0}{39.8}
+	\datarow{320}{30.2}{33.0}{2840}{35.0}{40.6}
+	\datarow{360}{30.6}{33.8}{2880}{35.2}{41.0}
+	\datarow{400}{31.0}{34.4}{2920}{35.4}{41.4}
+	\datarow{440}{31.4}{34.9}{2960}{35.7}{41.5}
+	\datarow{480}{31.9}{35.3}{3000}{36.0}{41.6}
+	\datarow{520}{32.4}{35.5}{3040}{36.4}{41.4}
+	\datarow{560}{32.9}{35.7}{3080}{36.8}{41.2}
+	\datarow{600}{33.4}{35.8}{3120}{37.1}{41.0}
+	\datarow{640}{33.9}{35.8}{3160}{37.5}{40.6}
+	\datarow{680}{34.4}{35.7}{3200}{37.9}{40.2}
+	\datarow{720}{34.9}{35.6}{3240}{38.2}{39.8}
+	\datarow{760}{35.4}{35.5}{3280}{38.6}{39.4}
+	\datarow{800}{35.9}{35.2}{3320}{38.9}{38.9}
+	\datarow{840}{36.3}{34.9}{3360}{39.2}{38.4}
+	\datarow{880}{36.8}{34.6}{3400}{39.6}{37.9}
+	\datarow{920}{37.1}{34.3}{3440}{39.8}{37.4}
+	\datarow{960}{37.5}{34.0}{3480}{40.1}{36.8}
+	\datarow{1000}{37.9}{33.6}{3520}{40.3}{36.4}
+	\datarow{1040}{38.2}{33.3}{3560}{40.5}{35.9}
+	\datarow{1080}{38.5}{32.9}{3600}{40.8}{35.3}
+	\datarow{1120}{38.8}{32.7}{3640}{40.9}{35.0}
+	\datarow{1160}{39.1}{32.2}{3680}{41.1}{34.4}
+	\datarow{1200}{39.2}{32.0}{3720}{41.2}{34.0}
+	\datarow{1240}{39.5}{31.6}{3760}{41.3}{33.6}
+	\datarow{1280}{39.7}{31.3}{3800}{41.4}{33.2}
+	\datarow{1320}{39.8}{31.0}{3840}{41.4}{32.9}
+	\datarow{1360}{40.0}{30.7}{3880}{41.5}{32.5}
+	\datarow{1400}{40.1}{30.4}{3920}{41.6}{32.1}
+	\datarow{1440}{40.2}{30.3}{3960}{41.6}{31.7}
+	\datarow{1480}{40.3}{30.0}{4000}{41.6}{31.5}
+	\datarow{1520}{40.4}{29.8}{4040}{41.6}{31.2}
+	\datarow{1560}{40.4}{29.6}{4080}{41.6}{31.0}
+	\datarow{1600}{40.5}{29.4}{4120}{41.6}{30.7}
+	\datarow{1640}{40.5}{29.3}{4160}{41.6}{30.4}
+	\datarow{1680}{40.6}{29.1}{4200}{41.6}{30.3}
+	\datarow{1720}{40.6}{29.0}{4240}{41.6}{30.1}
+	\datarow{1760}{40.6}{28.8}{4280}{41.5}{30.0}
+	\datarow{1800}{40.6}{28.7}{4320}{41.4}{29.8}
+	\datarow{1840}{40.6}{28.6}{4360}{41.4}{29.6}
+	\datarow{1880}{40.6}{28.5}{4400}{41.4}{29.5}
+	\datarow{1920}{40.6}{28.4}{4440}{41.3}{29.4}
+	\datarow{1960}{40.6}{28.3}{4480}{41.2}{29.3}
+	\datarow{2000}{40.6}{28.2}{4520}{41.2}{29.1}
+	\datarow{2040}{40.6}{28.2}{4560}{41.2}{29.1}
+	\datarow{2080}{40.6}{28.1}{4600}{41.1}{29.0}
+	\datarow{2120}{40.5}{28.2}{4640}{41.1}{29.0}
+	\datarow{2160}{40.5}{28.1}{4680}{41.0}{28.9}
+	\datarow{2200}{40.5}{28.0}{4720}{40.9}{28.9}
+	\datarow{2240}{40.5}{28.0}{4760}{40.9}{28.9}
+	\datarow{2280}{40.4}{28.0}{4800}{40.8}{28.9}
+	\datarow{2320}{40.4}{27.9}{4840}{40.8}{28.9}
+	\datarow{2360}{40.4}{27.8}{4880}{40.7}{28.9}
+	\datarow{2400}{40.4}{27.8}{4920}{40.6}{28.9}
+	\datarow{2440}{40.4}{27.8}{4960}{40.6}{29.0}
+	\datarow{2480}{40.4}{27.8}{5000}{40.5}{29.0}
+	\datarow{2520}{40.3}{27.9}{}{}{}
+	\vskip 2pt\symrule{0.08em}
+	\endgroup
+	
 	\section{List of Symbols}
 	\vspace{0.3cm}
 	\begingroup
@@ -413,7 +594,7 @@
 	\setlength{\symA}{2.0cm}\setlength{\symC}{2.0cm}
 	\setlength{\symB}{\dimexpr\linewidth-\symA-\symC-8pt\relax}
 	\refstepcounter{table}\label{tab:symbols}%
-	{\centering Table~\thetable: Symbol list.\par}
+	{\centering\small Table~\thetable: Symbol list.\par}
 	\nopagebreak\vskip 3pt
 	\symrule{0.08em}\nopagebreak\vskip 2pt
 	\symrow{\textbf{Symbol}}{\textbf{Meaning}}{\textbf{Unit}}\nopagebreak
@@ -430,7 +611,7 @@
 		\symrow{$K\upsub{p}$}{Proportional gain}{\unit{\per\degreeCelsius}}
 		\symrow{$K\upsub{i}$}{Integral gain}{\unit{\per\degreeCelsius\per\second}}
 		\symrow{$T\upsub{s}$}{Settling time}{\unit{\second}}
-		\symrow{\%OS}{Percent overshoot}{\unit{\percent}}
+		\symrow{OS}{Overshoot}{\unit{\percent}}
 		\symrow{$\zeta$}{Damping ratio}{--}
 		\symrow{$\omega\upsub{n}$}{Natural frequency}{\unit{\radian\per\second}}
 		\symrow{GM}{Gain margin}{\unit{\decibel}}
@@ -456,7 +637,7 @@
 	\endgroup
 	
 	\section{Additional Information}
-	For more information or to view the code and supplementary documentation, visit the GitHub repository by clicking \href{https://github.com/ChrisTekam/thermobox}{here}.
+	For more information or to view the code, raw measurement logs, and main documentation, visit the GitHub repository by clicking \href{https://github.com/ChrisTekam/thermobox}{here}.
 	
 	\section*{References}
 	\printbibliography[heading=none]
